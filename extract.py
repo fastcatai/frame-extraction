@@ -15,15 +15,16 @@ def input_video_list(videos: list[Path], freeze_detection: bool, output_folder: 
         if not video.is_file():
             print('\n[ERROR]', video, 'does not exists or is not a file\n', file=sys.stderr)
             return
-
     # print message
     video_count = len(videos)
     video_str = 'video' if video_count == 1 else 'videos'
     print('Processing {} {}: Depending on the number of videos this could take some time.'
           .format(video_count, video_str))
-
     # go through each video
     for video in videos:
+        # reset states
+        reset()
+        # extract
         print('\nVideo:', video)
         frame_extraction(video, freeze_detection, output_folder)
 
@@ -34,23 +35,27 @@ def input_folder(folder: Path, freeze_detection: bool, output_folder: Path = Non
     # check if path is directory
     if not folder.is_dir():
         raise NotADirectoryError(folder)
-
     # get all files of folder
     files = [p for p in folder.glob('*') if p.is_file()]
-
     # print message
     file_count = len(files)
     file_str = 'file' if file_count == 1 else 'files'
     print('Processing {} {}: Depending on the number of videos this could take some time. Non-video files are skipped.'
           .format(file_count, file_str))
-
     # go through each file in folder
     for file in files:
+        # reset states
+        reset()
+        # extract
         print('\nFile:', file)
         frame_extraction(file, freeze_detection, output_folder)
 
 
 def input_frame_folder(folder: Path, output_folder: Path = None):
+    """Freeze detection on a folder that contains only video frames"""
+
+    # reset states
+    reset()
     # check if path is directory
     if not folder.is_dir():
         raise NotADirectoryError(folder)
@@ -180,6 +185,14 @@ def perform_freeze_detection(frame: np.ndarray):
     return start_freeze
 
 
+def reset():
+    global intensity_avg, prev_frame, detected
+    # reset
+    intensity_avg = []
+    prev_frame = None
+    detected = False
+
+
 FREEZES_EXT = '.freezes.txt'
 # number of frames that are
 # averaged to look for a freeze
@@ -188,7 +201,7 @@ window_size = 10
 # usually the same size as windows_size
 # because the oldest value is removed
 intensity_avg = []
-# hold the previous frame
+# holds the previous frame
 # for calc the difference
 prev_frame = None
 # flag that indicated if we
